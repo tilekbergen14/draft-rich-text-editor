@@ -1,0 +1,12 @@
+.editor {
+  background-color: #fff;
+  padding: 8px;
+  font-size: 20px;
+}
+figure {
+  margin: 0;
+}
+
+.rdw-image-modal-upload-option-label {
+  word-wrap: anywhere;
+}
