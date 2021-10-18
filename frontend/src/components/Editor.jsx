@@ -10,6 +10,7 @@ export default class ControlledEditor extends Component {
     super(props);
     this.state = {
       editorState: EditorState.createEmpty(),
+      images: [],
     };
   }
 
@@ -19,63 +20,72 @@ export default class ControlledEditor extends Component {
     });
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevContentState = convertToRaw(
-      prevState.editorState.getCurrentContent()
-    );
+  componentDidUpdate(prevProps, prevState) {}
+
+  imageUpload = async (e) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", e);
+      const { data } = await axios.post(
+        "http://localhost:5000/image",
+        formData
+      );
+      this.setState({
+        images: [
+          ...this.state.images,
+          `http://localhost:5000/${data.imageUrl}`,
+        ],
+      });
+      return { data: { link: `http://localhost:5000/${data.imageUrl}` } };
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  clickHandler = () => {
     const currentContentState = convertToRaw(
       this.state.editorState.getCurrentContent()
     );
 
     const images = [];
-    if (prevContentState.blocks.length !== currentContentState.blocks.length) {
-      let i = 0;
-      while (currentContentState.entityMap[i]) {
-        if (currentContentState.entityMap[i].type === "IMAGE") {
-          images.push(currentContentState.entityMap[i].data.src);
-        }
-        i++;
-      }
 
-      let j = 0;
-      while (prevContentState.entityMap[j]) {
-        if (!images.includes(prevContentState.entityMap[j].data.src)) {
-          axios
-            .delete(prevContentState.entityMap[j].data.src)
-            .then((result) => {
-              console.log(result);
-            });
-        }
-        j++;
+    let i = 0;
+    while (currentContentState.entityMap[i]) {
+      if (currentContentState.entityMap[i].type === "IMAGE") {
+        images.push(currentContentState.entityMap[i].data.src);
       }
-      console.log(images);
+      i++;
     }
-  }
 
-  imageUpload = async (e) => {
-    const formData = new FormData();
-    formData.append("file", e);
-    const { data } = await axios.post("http://localhost:5000/image", formData);
-    return { data: { link: `http://localhost:5000/${data.imageUrl}` } };
+    let j = 0;
+    while (this.state.images[j]) {
+      if (!images.includes(this.state.images[j])) {
+        axios.delete(this.state.images[j]).then((result) => {});
+      }
+      j++;
+    }
+    this.setState({ images: images });
   };
 
   render() {
     const { editorState } = this.state;
     return (
-      <Editor
-        editorState={editorState}
-        wrapperClassName="demo-wrapper"
-        editorClassName="editor"
-        onEditorStateChange={this.onEditorStateChange}
-        toolbar={{
-          image: {
-            defaultSize: {
-              width: "100%",
+      <div>
+        <Editor
+          editorState={editorState}
+          wrapperClassName="demo-wrapper"
+          editorClassName="editor"
+          onEditorStateChange={this.onEditorStateChange}
+          toolbar={{
+            image: {
+              defaultSize: {
+                width: "100%",
+              },
+              uploadCallback: this.imageUpload,
             },
-            uploadCallback: this.imageUpload,
-          },
-        }}
-      />
+          }}
+        />
+      </div>
     );
   }
 }
